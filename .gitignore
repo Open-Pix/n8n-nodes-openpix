@@ -1,0 +1,13 @@
+node_modules
+.DS_Store
+.tmp
+tmp
+dist
+npm-debug.log*
+.vscode/launch.json
+.eslintcache
+yarn-error.log
+.env*
+.jest-cache
+
+n8n-nodes-openpix*.tgz
