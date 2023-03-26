@@ -53,7 +53,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/entria/n8n-nodes-openpix"
+    "url": "https://github.com/open-pix/n8n-nodes-openpix"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json && gulp build:icons",

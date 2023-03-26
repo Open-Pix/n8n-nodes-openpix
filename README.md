@@ -38,7 +38,7 @@ To get started install the package in your n8n root directory:
 
 ## Contributing
 
-1. Fork it (<https://github.com/entria/n8n-nodes-openpix/fork>)
+1. Fork it (<https://github.com/open-pix/n8n-nodes-openpix/fork>)
 2. Create your feature branch (`git checkout -b feature/fooBar`)
 3. Commit your changes (`git commit -m 'feat(fooBar) Add some fooBar'`)
 4. Push to the branch (`git push origin feature/fooBar`)
