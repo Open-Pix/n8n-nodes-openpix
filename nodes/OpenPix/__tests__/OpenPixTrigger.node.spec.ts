@@ -102,6 +102,7 @@ it('should return true in checkExists webhook method since there is a webhook cr
 
   expect(workflow.getStaticData('node', node)).toEqual({
     webhookId: webhook.id,
+    hmacSecretKey: webhook.hmacSecretKey,
   });
 });
 
@@ -146,6 +147,7 @@ it('should create the webhook', async () => {
 
   expect(workflow.getStaticData('node', node)).toEqual({
     webhookId: webhook.id,
+    hmacSecretKey: webhook.hmacSecretKey,
   });
 });
 
