@@ -16,9 +16,6 @@ import {
   verifyRsaSignature,
 } from './verifySignature';
 
-// Signatures are computed over the untouched request bytes, which n8n keeps on
-// `rawBody` while still handing the parsed body to the workflow. Re-serializing
-// the parsed body is only a fallback for n8n versions that do not set it.
 type WebhookRequest = {
   body?: unknown;
   rawBody?: Buffer | string;
@@ -243,8 +240,6 @@ export class OpenPixTrigger implements INodeType {
     const hmacSecretKey = webhookData.hmacSecretKey as string | undefined;
     const publicKey = this.getNodeParameter('webhookPublicKey', '') as string;
 
-    // Nothing to verify against: webhooks registered before this node could
-    // store the HMAC secret keep working until the workflow is reactivated
     if (hmacSecretKey || publicKey) {
       const rawBody = getRawBody(req);
       const headers = req.headers as Record<string, string | undefined>;
