@@ -32,6 +32,26 @@ To get started install the package in your n8n root directory:
 4. Get your OpenPix API key from [API Getting Started](https://developers.openpix.com.br/docs/apis/api-getting-started).
 5. Enter your OpenPix API key in the _API Key_ field.
 
+## Webhook signature verification
+
+The **OpenPix Trigger** node verifies that every incoming webhook was really sent
+by OpenPix, and answers `401` to anything it cannot verify.
+
+When the node creates the webhook — or finds an existing one with the same URL —
+it stores that webhook's `hmacSecretKey` in the workflow's static data and uses it
+to verify the `x-openpix-signature` header (HMAC-SHA1 over the raw request body).
+This needs no configuration.
+
+Workflows created with an older version of this node have no stored secret yet, so
+they keep accepting webhooks unverified. **Deactivate and reactivate the workflow**
+once after upgrading to pick the secret up.
+
+If the webhook was registered outside this node, fill the optional **Webhook Public
+Key** field instead. The node then verifies the `x-webhook-signature` header
+(RSA-SHA256 over the raw request body, base64). A malformed key fails closed:
+every request is rejected. Get the public key from
+[Webhook signature validation](https://developers.openpix.com.br/docs/webhook/web-hook-validation).
+
 ## API Reference
 
 - [OpenPix API](https://developers.openpix.com.br/docs/apis/api-getting-started)

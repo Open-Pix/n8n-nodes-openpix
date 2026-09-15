@@ -9,6 +9,31 @@ import {
   NodeApiError,
 } from 'n8n-workflow';
 import { apiRequest } from './transport';
+import {
+  HMAC_SIGNATURE_HEADER,
+  RSA_SIGNATURE_HEADER,
+  verifyHmacSignature,
+  verifyRsaSignature,
+} from './verifySignature';
+
+type WebhookRequest = {
+  body?: unknown;
+  rawBody?: Buffer | string;
+};
+
+const getRawBody = (req: WebhookRequest): Buffer => {
+  const { rawBody } = req;
+
+  if (Buffer.isBuffer(rawBody)) {
+    return rawBody;
+  }
+
+  if (typeof rawBody === 'string') {
+    return Buffer.from(rawBody);
+  }
+
+  return Buffer.from(JSON.stringify(req.body ?? {}));
+};
 
 export class OpenPixTrigger implements INodeType {
   description: INodeTypeDescription = {
@@ -43,7 +68,7 @@ export class OpenPixTrigger implements INodeType {
       {
         name: 'default',
         httpMethod: 'POST',
-        reponseMode: 'onReceived',
+        responseMode: 'onReceived',
         path: 'webhook',
       },
     ],
@@ -55,11 +80,22 @@ export class OpenPixTrigger implements INodeType {
         required: true,
         default: '',
         description:
-          'The event to listen to. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>.',
+          'The event to listen to. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
         typeOptions: {
           loadOptionsMethod: 'getEvents',
         },
         options: [],
+      },
+      {
+        displayName: 'Webhook Public Key',
+        name: 'webhookPublicKey',
+        type: 'string',
+        default: '',
+        typeOptions: {
+          password: true,
+        },
+        description:
+          'OpenPix public key used to verify the x-webhook-signature header. Only needed for webhooks created outside this node — webhooks created here are verified automatically with their HMAC secret.',
       },
     ],
   };
@@ -127,6 +163,7 @@ export class OpenPixTrigger implements INodeType {
           const webhookData = this.getWorkflowStaticData('node');
 
           webhookData.webhookId = webhook.id;
+          webhookData.hmacSecretKey = webhook.hmacSecretKey;
 
           return true;
         }
@@ -167,6 +204,7 @@ export class OpenPixTrigger implements INodeType {
 
         const webhookData = this.getWorkflowStaticData('node');
         webhookData.webhookId = webhook.id as string;
+        webhookData.hmacSecretKey = webhook.hmacSecretKey as string;
 
         return true;
       },
@@ -187,6 +225,7 @@ export class OpenPixTrigger implements INodeType {
           }
 
           delete webhookData.webhookId;
+          delete webhookData.hmacSecretKey;
         }
 
         return true;
@@ -196,6 +235,37 @@ export class OpenPixTrigger implements INodeType {
 
   async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
     const req = this.getRequestObject();
+    const webhookData = this.getWorkflowStaticData('node');
+
+    const hmacSecretKey = webhookData.hmacSecretKey as string | undefined;
+    const publicKey = this.getNodeParameter('webhookPublicKey', '') as string;
+
+    if (hmacSecretKey || publicKey) {
+      const rawBody = getRawBody(req);
+      const headers = req.headers as Record<string, string | undefined>;
+
+      const isValid = hmacSecretKey
+        ? verifyHmacSignature({
+            hmacSecretKey,
+            rawBody,
+            signature: headers[HMAC_SIGNATURE_HEADER],
+          })
+        : verifyRsaSignature({
+            publicKey,
+            rawBody,
+            signature: headers[RSA_SIGNATURE_HEADER],
+          });
+
+      if (!isValid) {
+        const res = this.getResponseObject();
+
+        res.status(401).json({ message: 'Invalid webhook signature' });
+
+        return {
+          noWebhookResponse: true,
+        };
+      }
+    }
 
     return {
       workflowData: [this.helpers.returnJsonArray(req.body)],

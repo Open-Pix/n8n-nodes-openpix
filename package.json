@@ -1,7 +1,7 @@
 {
   "name": "n8n-nodes-openpix",
   "description": "n8n nodes for OpenPix",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "author": {
     "name": "Eduardo Maciel de Matos",
     "email": "eduardo.maciel@openpix.com.br"
